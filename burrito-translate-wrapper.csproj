@@ -5,6 +5,7 @@
     <RootNamespace>burrito_translate_wrapper</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.4" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.38" />
   </ItemGroup>
   <ItemGroup>
