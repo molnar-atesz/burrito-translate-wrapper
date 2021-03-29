@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.Storage.Blob;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -18,27 +17,19 @@ namespace BurritoTranslate
         [FunctionName("ExportToCsv")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            [Blob("burritocontainer", Connection = "StorageConnectionString")] CloudBlobContainer outputContainer,
             ILogger log)
         {
             log.LogInformation("Export request processing.");
 
-            await outputContainer.CreateIfNotExistsAsync();
-
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             Glossary glossary = JsonConvert.DeserializeObject<Glossary>(requestBody);
-            var blobName = Uri.EscapeUriString($"glossary-{glossary.Id}-{glossary.Created}.csv");
+            var fileName = Uri.EscapeUriString($"glossary-{glossary.Id}-{glossary.Created}.csv");
 
             var csv = TransformToCsv(glossary);
 
-            var cloudBlockBlob = outputContainer.GetBlockBlobReference(blobName);
-            await cloudBlockBlob.UploadTextAsync(csv);
-            System.Console.WriteLine($"Uri: {cloudBlockBlob.Uri}");
-            System.Console.WriteLine($"storageUri: {cloudBlockBlob.StorageUri}");
-
-            string responseMessage = "";
-
-            return new OkObjectResult(responseMessage);
+            byte[] fileBytes = Encoding.UTF8.GetBytes(csv);
+            // for local testing need to set CORS, see: https://stackoverflow.com/a/48069299/8076798
+            return new FileContentResult(fileBytes, "text/csv") { FileDownloadName = fileName };
         }
 
         private static string TransformToCsv(Glossary glossary)
